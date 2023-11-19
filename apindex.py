@@ -36,8 +36,8 @@ import time
 from xml.dom.minidom import parseString
 
 
-VERSION = "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
-PREFIX = "@CMAKE_INSTALL_PREFIX@"
+VERSION = '@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@'
+PREFIX = '@CMAKE_INSTALL_PREFIX@'
 if PREFIX.startswith('@'):
     PREFIX = '.'
 
@@ -50,32 +50,31 @@ class ResourceManager:
 
     @staticmethod
     def getFile(fileName):
-        return PREFIX + "/share/apindex/" + fileName
+        return PREFIX + '/share/apindex/' + fileName
 
     @staticmethod
     def readFile(fileName):
         with open(ResourceManager.getFile(fileName), 'r') as file:
-            data = file.read()
-        return str(data)
+            return file.read()
 
     @staticmethod
     def writeFile(filePath, data):
-        with open(filePath, "w") as file:
+        with open(filePath, 'w') as file:
             file.write(data)
 
     @staticmethod
     def readFileBase64(fileName):
-        with open(ResourceManager.getFile(fileName), "rb") as file:
+        with open(ResourceManager.getFile(fileName), 'rb') as file:
             data = file.read()
-        return base64.b64encode(data).decode("ascii")
+        return base64.b64encode(data).decode('ascii')
 
     @staticmethod
     def parseIconsDescription():
-        doc = parseString(ResourceManager.readFile("icons.xml"))
+        doc = parseString(ResourceManager.readFile('icons.xml'))
         icons = []
-        for icon in doc.getElementsByTagName("icon"):
-            i = Icon(icon.getAttribute("file"))
-            for ex in icon.getElementsByTagName("ex"):
+        for icon in doc.getElementsByTagName('icon'):
+            i = Icon(icon.getAttribute('file'))
+            for ex in icon.getElementsByTagName('ex'):
                 i.extensions.append(str(ex.firstChild.nodeValue))
             icons.append(i)
         return icons
@@ -83,17 +82,17 @@ class ResourceManager:
 
 class File:
 
-    STATIC_FILE_HTML = ResourceManager.readFile("file.template.html")
+    STATIC_FILE_HTML = ResourceManager.readFile('file.template.html')
 
-    FILE_ICON = ResourceManager.readFileBase64("img/file.png")
-    FOLDER_ICON = ResourceManager.readFileBase64("img/folder.png")
-    BACK_ICON = ResourceManager.readFileBase64("img/back.png")
+    FILE_ICON = ResourceManager.readFileBase64('img/file.png')
+    FOLDER_ICON = ResourceManager.readFileBase64('img/folder.png')
+    BACK_ICON = ResourceManager.readFileBase64('img/back.png')
 
     ICONS = ResourceManager.parseIconsDescription()
 
     def getIcon(self):
 
-        if self.filename == "..":
+        if self.filename == '..':
             return self.BACK_ICON
 
         if self.isDir():
@@ -102,40 +101,40 @@ class File:
         for icon in self.ICONS:
             for ex in icon.extensions:
                 if self.filename.endswith(ex):
-                    return ResourceManager.readFileBase64("img/"+icon.file)
+                    return ResourceManager.readFileBase64('img/'+icon.file)
 
         return self.FILE_ICON
 
-    def __init__(self, filename, root="."):
+    def __init__(self, filename, root='.'):
         self.filename = File.stripCurrentDir(filename)
         self.root = File.stripCurrentDir(root)
         self.path = Path(root) / filename
 
     @staticmethod
     def stripCurrentDir(path):
-        return path.replace("./", "").replace("/.", "")
+        return path.replace('./', '').replace('/.', '')
 
     def toHTML(self):
         if self.isDir():
-            fileSize = "-"
+            fileSize = '-'
         else:
-            fileSize = str(math.floor(os.path.getsize(self.path) / 1000)) + " kB"
+            fileSize = str(math.floor(os.path.getsize(self.path) / 1000)) + ' kB'
         modifyTime = time.strftime('%d-%b-%Y %H:%M', time.localtime(os.path.getmtime(self.path)))
 
         return File.STATIC_FILE_HTML \
-            .replace("#FILENAME", self.path.name) \
-            .replace("#FILEURL", self.filename) \
-            .replace("#MODIFIED", modifyTime).replace("#SIZE", str(fileSize)) \
-            .replace("#IMAGE", self.getIcon())
+            .replace('#FILENAME', self.path.name) \
+            .replace('#FILEURL', self.filename) \
+            .replace('#MODIFIED', modifyTime).replace('#SIZE', fileSize) \
+            .replace('#IMAGE', self.getIcon())
 
     def getPath(self):
-        return File.stripCurrentDir(self.root + "/" + self.filename)
+        return File.stripCurrentDir(self.root + '/' + self.filename)
 
     def getPathFromRoot(self):
-        if self.filename == ".":
-            return "/"
+        if self.filename == '.':
+            return '/'
         else:
-            return "/" + self.getPath()
+            return '/' + self.getPath()
 
     def getFileName(self):
         return self.filename
@@ -153,8 +152,8 @@ class File:
 
 class IndexWriter:
 
-    STATIC_FOOTER = ResourceManager.readFile("footer.template.html") \
-        .replace("#VERSION", VERSION)
+    STATIC_FOOTER = ResourceManager.readFile('footer.template.html') \
+        .replace('#VERSION', VERSION)
 
     @staticmethod
     def writeIndex(startPath, title = None, footer=None, ignore=[]):
@@ -162,24 +161,21 @@ class IndexWriter:
         dirsRead = []
         files_to_ignore = set(Path(file) for file in ignore)
         root = File(startPath)
-        html = ResourceManager.readFile("index.template.html")
+        html = ResourceManager.readFile('index.template.html')
 
         if title is None: title = root.getPathFromRoot()
         if footer is None: footer = IndexWriter.STATIC_FOOTER
 
         # fill the details
-        html = html.replace("#TITLE", title)
-        html = html.replace("#FOOTER", footer)
-        html = html.replace("#DIR", root.getPathFromRoot())
-
-        # add the back dir
-        dirsRead.append(File("..").toHTML())
+        html = html.replace('#TITLE', title)
+        html = html.replace('#FOOTER', footer)
+        html = html.replace('#DIR', root.getPathFromRoot())
 
         for file in root.getChildren():
             if file.path in files_to_ignore:
                 continue
             # we do not want to index the index itself
-            if file.getFileName() == "index.html":
+            if file.getFileName() == 'index.html':
                 continue
 
             if file.isDir():
@@ -194,12 +190,13 @@ class IndexWriter:
         # fill in the file list
         dirsRead.sort()
         filesRead.sort()
-        html = html.replace("#GEN_DIRS", "".join(str(x) for x in dirsRead))
-        html = html.replace("#GEN_FILES", "".join(str(x) for x in filesRead))
+        BACK_DIR = File('..').toHTML()
+        html = html.replace('#GEN_DIRS', BACK_DIR + ''.join(dirsRead))
+        html = html.replace('#GEN_FILES', ''.join(filesRead))
 
         # write the actual index file
-        print("Writing " + root.getPath() + "/index.html" )
-        ResourceManager.writeFile(root.getPath() + "/index.html", html)
+        print('Writing ' + root.getPath() + '/index.html' )
+        ResourceManager.writeFile(root.getPath() + '/index.html', html)
 
 def main():
     parser = argparse.ArgumentParser(description='apindex')
