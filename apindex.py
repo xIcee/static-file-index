@@ -24,18 +24,22 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
+import base64
+from contextlib import suppress
+from pathlib import Path
+import math
 import os
 import os.path
-import base64
-import math
 import sys
-
+import time
 from xml.dom.minidom import parseString
 
-import time
 
 VERSION = "@CPACK_PACKAGE_VERSION_MAJOR@.@CPACK_PACKAGE_VERSION_MINOR@"
 PREFIX = "@CMAKE_INSTALL_PREFIX@"
+if PREFIX.startswith('@'):
+    PREFIX = '.'
 
 class Icon:
     def __init__(self, file):
@@ -50,7 +54,7 @@ class ResourceManager:
 
     @staticmethod
     def readFile(fileName):
-        with open(ResourceManager.getFile(fileName), "r") as file:
+        with open(ResourceManager.getFile(fileName), 'r') as file:
             data = file.read()
         return str(data)
 
@@ -152,7 +156,7 @@ class IndexWriter:
         .replace("#VERSION", VERSION)
 
     @staticmethod
-    def writeIndex(startPath, title = None, footer=None):
+    def writeIndex(startPath, title = None, footer=None, ignore=[]):
         filesRead = []
         dirsRead = []
         root = File(startPath)
@@ -178,7 +182,8 @@ class IndexWriter:
                 dirsRead.append(file.toHTML())
                 IndexWriter.writeIndex(file.getPath(), title)
             else:
-                filesRead.append(file.toHTML())
+                with suppress(FileNotFoundError):
+                    filesRead.append(file.toHTML())
 
         # fill in the file list
         dirsRead.sort()
@@ -191,11 +196,18 @@ class IndexWriter:
         ResourceManager.writeFile(root.getPath() + "/index.html", html)
 
 def main():
-    if len(sys.argv) <= 1:
-        print("No root directory specified!")
-        exit(1)
+    parser = argparse.ArgumentParser(description='apindex')
+    parser.add_argument(
+            '--ignore',
+            default=[],
+            nargs='*',
+            help='files or paths to ignore',
+        )
+    parser.add_argument('root_dir', help='root directory to index')
+    args = parser.parse_args()
+    root_dir = args.root_dir
+    files_to_ignore = args.ignore
+    IndexWriter.writeIndex(sys.argv[1], ignore=files_to_ignore)
 
-    IndexWriter.writeIndex(sys.argv[1])
-
-if __name__=="__main__":
+if __name__ == '__main__':
     main()
