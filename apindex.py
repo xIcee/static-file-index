@@ -156,7 +156,7 @@ class IndexWriter:
         .replace('#VERSION', VERSION)
 
     @staticmethod
-    def writeIndex(startPath, title = None, footer=None, ignore=[]):
+    def writeIndex(startPath, title = None, footer=None, ignore=[], is_root_dir=False):
         filesRead = []
         dirsRead = []
         files_to_ignore = set(Path(file) for file in ignore)
@@ -190,7 +190,7 @@ class IndexWriter:
         # fill in the file list
         dirsRead.sort()
         filesRead.sort()
-        BACK_DIR = File('..').toHTML()
+        BACK_DIR = '' if is_root_dir else File('..').toHTML()
         html = html.replace('#GEN_DIRS', BACK_DIR + ''.join(dirsRead))
         html = html.replace('#GEN_FILES', ''.join(filesRead))
 
@@ -213,7 +213,7 @@ def main():
         )
     parser.add_argument('root_dir', help='root directory to index')
     args = parser.parse_args()
-    IndexWriter.writeIndex(args.root_dir, ignore=args.ignore)
+    IndexWriter.writeIndex(args.root_dir, ignore=args.ignore, is_root_dir=True)
 
 if __name__ == '__main__':
     main()
