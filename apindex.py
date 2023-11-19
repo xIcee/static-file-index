@@ -109,6 +109,7 @@ class File:
     def __init__(self, filename, root="."):
         self.filename = File.stripCurrentDir(filename)
         self.root = File.stripCurrentDir(root)
+        self.path = Path(root) / filename
 
     @staticmethod
     def stripCurrentDir(path):
@@ -118,11 +119,12 @@ class File:
         if self.isDir():
             fileSize = "-"
         else:
-            fileSize = str(math.floor(os.path.getsize(self.getPath()) / 1000)) + " kB"
-        modifyTime = time.strftime('%d-%b-%Y %H:%M',
-                        time.localtime(os.path.getmtime(self.getPath())))
+            fileSize = str(math.floor(os.path.getsize(self.path) / 1000)) + " kB"
+        modifyTime = time.strftime('%d-%b-%Y %H:%M', time.localtime(os.path.getmtime(self.path)))
 
-        return File.STATIC_FILE_HTML.replace("#FILENAME", self.filename) \
+        return File.STATIC_FILE_HTML \
+            .replace("#FILENAME", self.path.name) \
+            .replace("#FILEURL", self.filename) \
             .replace("#MODIFIED", modifyTime).replace("#SIZE", str(fileSize)) \
             .replace("#IMAGE", self.getIcon())
 
@@ -139,13 +141,12 @@ class File:
         return self.filename
 
     def isDir(self):
-        return os.path.isdir(self.getPath())
+        return os.path.isdir(self.path)
 
     def getChildren(self):
-        children = []
         for file in os.listdir(self.filename):
-            children.append(File(file, self.getPath()))
-        return children
+            yield File(file, self.getPath())
+
 
     def getParentDir(self):
         return self.root
@@ -159,6 +160,7 @@ class IndexWriter:
     def writeIndex(startPath, title = None, footer=None, ignore=[]):
         filesRead = []
         dirsRead = []
+        files_to_ignore = set(Path(file) for file in ignore)
         root = File(startPath)
         html = ResourceManager.readFile("index.template.html")
 
@@ -174,6 +176,8 @@ class IndexWriter:
         dirsRead.append(File("..").toHTML())
 
         for file in root.getChildren():
+            if file.path in files_to_ignore:
+                continue
             # we do not want to index the index itself
             if file.getFileName() == "index.html":
                 continue
@@ -182,8 +186,10 @@ class IndexWriter:
                 dirsRead.append(file.toHTML())
                 IndexWriter.writeIndex(file.getPath(), title)
             else:
-                with suppress(FileNotFoundError):
+                try:
                     filesRead.append(file.toHTML())
+                except FileNotFoundError as e:
+                    print(f'could not find file {e}')
 
         # fill in the file list
         dirsRead.sort()
@@ -203,11 +209,14 @@ def main():
             nargs='*',
             help='files or paths to ignore',
         )
+    parser.add_argument(
+            '--ignore_hidden',
+            default=False,
+            help='ignore files that start with .',
+        )
     parser.add_argument('root_dir', help='root directory to index')
     args = parser.parse_args()
-    root_dir = args.root_dir
-    files_to_ignore = args.ignore
-    IndexWriter.writeIndex(sys.argv[1], ignore=files_to_ignore)
+    IndexWriter.writeIndex(args.root_dir, ignore=args.ignore)
 
 if __name__ == '__main__':
     main()
