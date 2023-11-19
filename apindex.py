@@ -160,7 +160,7 @@ class IndexWriter:
         filesRead = []
         dirsRead = []
         files_to_ignore = set(Path(file) for file in ignore)
-        root = File(startPath)
+        root = File(startPath.rstrip('/'))
         html = ResourceManager.readFile('index.template.html')
 
         if title is None: title = root.getPathFromRoot()
