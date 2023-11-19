@@ -14,9 +14,8 @@ The file icons are also embedded into the `index.html` file so there is no need 
 
 ```sh
 git clone https://github.com/Sovereign-Engineering/static-file-index
+cd static-file-index
 # git reset --hard SHA1
-tar -xf apindex-x.xx.tar.gz
-cd apindex-x.xx
 cmake . -DCMAKE_INSTALL_PREFIX=/usr
 sudo make install
 ```

@@ -106,6 +106,7 @@ class File:
         return self.FILE_ICON
 
     def __init__(self, filename, root='.'):
+        filename = filename.rstrip('/')
         self.filename = File.stripCurrentDir(filename)
         self.root = File.stripCurrentDir(root)
         self.path = Path(root) / filename
