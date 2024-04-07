@@ -41,13 +41,14 @@ PREFIX = '@CMAKE_INSTALL_PREFIX@'
 if PREFIX.startswith('@'):
     PREFIX = '.'
 
+
 class Icon:
     def __init__(self, file):
         self.file = file
         self.extensions = []
 
-class ResourceManager:
 
+class ResourceManager:
     @staticmethod
     def getFile(fileName):
         return PREFIX + '/share/apindex/' + fileName
@@ -81,7 +82,6 @@ class ResourceManager:
 
 
 class File:
-
     STATIC_FILE_HTML = ResourceManager.readFile('file.template.html')
 
     FILE_ICON = ResourceManager.readFileBase64('img/file.png')
@@ -91,7 +91,6 @@ class File:
     ICONS = ResourceManager.parseIconsDescription()
 
     def getIcon(self):
-
         if self.filename == '..':
             return self.BACK_ICON
 
@@ -101,7 +100,7 @@ class File:
         for icon in self.ICONS:
             for ex in icon.extensions:
                 if self.filename.endswith(ex):
-                    return ResourceManager.readFileBase64('img/'+icon.file)
+                    return ResourceManager.readFileBase64('img/' + icon.file)
 
         return self.FILE_ICON
 
@@ -120,13 +119,17 @@ class File:
             fileSize = '-'
         else:
             fileSize = str(math.floor(os.path.getsize(self.path) / 1000)) + ' kB'
-        modifyTime = time.strftime('%d-%b-%Y %H:%M', time.localtime(os.path.getmtime(self.path)))
+        modifyTime = time.strftime(
+            '%d-%b-%Y %H:%M', time.localtime(os.path.getmtime(self.path))
+        )
 
-        return File.STATIC_FILE_HTML \
-            .replace('#FILENAME', self.path.name) \
-            .replace('#FILEURL', self.filename) \
-            .replace('#MODIFIED', modifyTime).replace('#SIZE', fileSize) \
+        return (
+            File.STATIC_FILE_HTML.replace('#FILENAME', self.path.name)
+            .replace('#FILEURL', self.filename)
+            .replace('#MODIFIED', modifyTime)
+            .replace('#SIZE', fileSize)
             .replace('#IMAGE', self.getIcon())
+        )
 
     def getPath(self):
         return File.stripCurrentDir(self.root + '/' + self.filename)
@@ -147,17 +150,17 @@ class File:
         for file in os.listdir(self.filename):
             yield File(file, self.getPath())
 
-
     def getParentDir(self):
         return self.root
 
-class IndexWriter:
 
-    STATIC_FOOTER = ResourceManager.readFile('footer.template.html') \
-        .replace('#VERSION', VERSION)
+class IndexWriter:
+    STATIC_FOOTER = ResourceManager.readFile('footer.template.html').replace(
+        '#VERSION', VERSION
+    )
 
     @staticmethod
-    def writeIndex(startPath, title = None, footer=None, ignore=[], is_root_dir=False):
+    def writeIndex(startPath, title=None, footer=None, ignore=[], is_root_dir=False):
         filesRead = []
         dirsRead = []
         files_to_ignore = set(Path(file) for file in ignore)
@@ -183,7 +186,7 @@ class IndexWriter:
 
             if file.isDir():
                 dirsRead.append(file.toHTML())
-                IndexWriter.writeIndex(file.getPath(), title = file.getPathFromRoot())
+                IndexWriter.writeIndex(file.getPath(), title=file.getPathFromRoot())
             else:
                 try:
                     filesRead.append(file.toHTML())
@@ -198,25 +201,27 @@ class IndexWriter:
         html = html.replace('#GEN_FILES', ''.join(filesRead))
 
         # write the actual index file
-        print('Writing ' + root.getPath() + '/index.html' )
+        print('Writing ' + root.getPath() + '/index.html')
         ResourceManager.writeFile(root.getPath() + '/index.html', html)
+
 
 def main():
     parser = argparse.ArgumentParser(description='apindex')
     parser.add_argument(
-            '--ignore',
-            default=[],
-            nargs='*',
-            help='files or paths to ignore',
-        )
+        '--ignore',
+        default=[],
+        nargs='*',
+        help='files or paths to ignore',
+    )
     parser.add_argument(
-            '--ignore_hidden',
-            default=False,
-            help='ignore files that start with .',
-        )
+        '--ignore_hidden',
+        default=False,
+        help='ignore files that start with .',
+    )
     parser.add_argument('root_dir', help='root directory to index')
     args = parser.parse_args()
     IndexWriter.writeIndex(args.root_dir, ignore=args.ignore, is_root_dir=True)
+
 
 if __name__ == '__main__':
     main()
