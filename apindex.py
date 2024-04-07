@@ -164,8 +164,10 @@ class IndexWriter:
         root = File(startPath.rstrip('/'))
         html = ResourceManager.readFile('index.template.html')
 
-        if title is None: title = root.getPathFromRoot()
-        if footer is None: footer = IndexWriter.STATIC_FOOTER
+        if title is None:
+            title = root.getPathFromRoot()
+        if footer is None:
+            footer = IndexWriter.STATIC_FOOTER
 
         # fill the details
         html = html.replace('#TITLE', title)
@@ -181,7 +183,7 @@ class IndexWriter:
 
             if file.isDir():
                 dirsRead.append(file.toHTML())
-                IndexWriter.writeIndex(file.getPath(), title)
+                IndexWriter.writeIndex(file.getPath(), title = file.getPathFromRoot())
             else:
                 try:
                     filesRead.append(file.toHTML())
