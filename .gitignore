@@ -1,3 +1,6 @@
 .idea/
 build/
 test_data/
+dist/
+.ruff_cache/
+__pycache__
